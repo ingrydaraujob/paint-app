@@ -47,7 +47,7 @@ function drawStroke(ctx, stroke, paperColor) {
   ctx.lineJoin = 'round'
   ctx.lineWidth = stroke.size
   ctx.globalCompositeOperation = 'source-over'
-  const effectiveColor = stroke.tool === 'eraser' ? '#ffffff' : stroke.color
+  const effectiveColor = stroke.tool === 'eraser' ? paperColor : stroke.color
   ctx.strokeStyle = effectiveColor
   ctx.fillStyle = effectiveColor
 
@@ -85,6 +85,24 @@ function App() {
   const [strokes, setStrokes] = useState([])
   const [redoStack, setRedoStack] = useState([])
   const [status, setStatus] = useState('Pronto para desenhar')
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem('paint-theme')
+
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      setTheme(storedTheme)
+      return
+    }
+
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    setTheme(prefersDark ? 'dark' : 'light')
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    window.localStorage.setItem('paint-theme', theme)
+  }, [theme])
 
   useEffect(() => {
     redrawCanvasRef.current = () => {
@@ -111,26 +129,6 @@ function App() {
       ctx.clearRect(0, 0, rect.width, rect.height)
       ctx.fillStyle = paperColor
       ctx.fillRect(0, 0, rect.width, rect.height)
-
-      ctx.save()
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.04)'
-      ctx.lineWidth = 1
-
-      for (let x = 24; x < rect.width; x += 24) {
-        ctx.beginPath()
-        ctx.moveTo(x, 0)
-        ctx.lineTo(x, rect.height)
-        ctx.stroke()
-      }
-
-      for (let y = 24; y < rect.height; y += 24) {
-        ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(rect.width, y)
-        ctx.stroke()
-      }
-
-      ctx.restore()
 
       strokes.forEach((stroke) => drawStroke(ctx, stroke, paperColor))
 
@@ -293,7 +291,7 @@ function App() {
     ctx.lineJoin = 'round'
     ctx.lineWidth = stroke.size
     ctx.globalCompositeOperation = 'source-over'
-    const effectiveColor = stroke.tool === 'eraser' ? '#ffffff' : stroke.color
+    const effectiveColor = stroke.tool === 'eraser' ? paperColor : stroke.color
     ctx.strokeStyle = effectiveColor
     ctx.fillStyle = effectiveColor
 
@@ -376,6 +374,10 @@ function App() {
     setStatus(nextTool === 'eraser' ? 'Borracha ativa' : 'Pincel ativo')
   }
 
+  const handleToggleTheme = () => {
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
+  }
+
   return (
     <main className="app-shell">
       <section className="hero-panel">
@@ -393,6 +395,13 @@ function App() {
           <div>
             <span className="stat-label">Status</span>
             <strong>{status}</strong>
+          </div>
+          <div>
+            <span className="stat-label">Tema</span>
+            <strong>{theme === 'dark' ? 'Escuro' : 'Claro'}</strong>
+            <button type="button" className="theme-button" onClick={handleToggleTheme}>
+              Alternar tema
+            </button>
           </div>
         </div>
       </section>
